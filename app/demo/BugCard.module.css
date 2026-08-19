@@ -1,0 +1,68 @@
+/* Shared "one bug, one card" layout used by /demo and /demo/edge-cases.
+   Values below are the literal px/rem/hex Tailwind was generating for the
+   classes this replaces - kept exact so every computed style the checker
+   measures (font size, color, spacing, border radius) is unchanged. */
+
+.card {
+  margin-top: 1.5rem; /* mt-6 */
+  border-radius: 0.75rem; /* rounded-xl */
+  border: 1px solid #00000014; /* border-black/[.08] */
+  background-color: #ffffff; /* bg-white */
+  padding: 1.25rem; /* p-5 */
+  box-shadow: 0 1px 3px 0 #0000001a, 0 1px 2px -1px #0000001a; /* shadow-sm */
+}
+
+@media (prefers-color-scheme: dark) {
+  .card {
+    border-color: #ffffff1a; /* dark:border-white/[.1] */
+    background-color: #18181b; /* dark:bg-zinc-900 */
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; /* gap-2 */
+}
+
+.badge {
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 1.5rem; /* h-6 */
+  width: 1.5rem; /* w-6 */
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px; /* rounded-full */
+  background-color: #27272a; /* bg-zinc-800 */
+  font-size: 0.75rem; /* text-xs */
+  font-weight: 700; /* font-bold */
+  color: #ffffff; /* text-white */
+}
+
+@media (prefers-color-scheme: dark) {
+  .badge {
+    background-color: #e4e4e7; /* dark:bg-zinc-200 */
+    color: #18181b; /* dark:text-zinc-900 */
+  }
+}
+
+.title {
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 600; /* font-semibold */
+}
+
+.description {
+  margin-top: 0.375rem; /* mt-1.5 */
+  font-size: 0.75rem; /* text-xs */
+  color: #71717b; /* text-zinc-500 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .description {
+    color: #9f9fa9; /* dark:text-zinc-400 */
+  }
+}
+
+.content {
+  margin-top: 0.75rem; /* mt-3 */
+}

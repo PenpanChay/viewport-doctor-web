@@ -1,0 +1,326 @@
+/* /demo/edge-cases page styles. Literal px/rem/hex values copied from the
+   Tailwind utility classes this replaces, so every computed style
+   lib/checks.ts measures is unchanged. Every bug here shares one
+   breakpoint: broken from Mobile S up through Laptop (1280px), clean from
+   Desktop (1440px) up - via a single real `@media (min-width: 1440px)`
+   block per rule, instead of a `min-[1440px]:` utility buried in a long
+   class string. */
+
+.announcementBar {
+  position: fixed;
+  inset-inline: 0; /* inset-x-0 */
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #432dd7; /* bg-indigo-700 */
+  padding-inline: 1rem; /* px-4 */
+  text-align: center;
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 500; /* font-medium */
+  color: #ffffff; /* text-white */
+  height: 96px;
+}
+
+.toast {
+  position: fixed;
+  left: 50%; /* left-1/2 */
+  top: -20px; /* top-[-20px] */
+  z-index: 40;
+  translate: -50% 0; /* -translate-x-1/2 */
+  border-radius: 9999px; /* rounded-full */
+  background-color: #009588; /* bg-teal-600 */
+  padding-inline: 1.25rem; /* px-5 */
+  padding-block: 0.75rem; /* py-3 */
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 600; /* font-semibold */
+  color: #ffffff; /* text-white */
+  box-shadow: 0 10px 15px -3px #0000001a, 0 4px 6px -4px #0000001a; /* shadow-lg */
+  border: none;
+}
+
+@media (min-width: 1440px) {
+  .toast {
+    left: auto;
+    top: auto;
+    right: 1.5rem; /* right-6 */
+    bottom: 1.5rem; /* bottom-6 */
+    translate: 0 0;
+    color: #000000; /* text-black */
+  }
+}
+
+.main {
+  margin-inline: auto; /* mx-auto */
+  width: 100%; /* w-full */
+  max-width: 48rem; /* max-w-3xl */
+  padding-inline: 1.5rem; /* px-6 */
+  padding-block: 4rem; /* py-16 */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; /* font-sans */
+  color: #18181b; /* text-zinc-900 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .main {
+    color: #fafafa; /* dark:text-zinc-50 */
+  }
+}
+
+@media (min-width: 1440px) {
+  .main {
+    padding-top: 6rem; /* min-[1440px]:pt-24 - clears the announcement bar */
+  }
+}
+
+.heading {
+  font-size: 1.25rem; /* text-xl */
+  font-weight: 600; /* font-semibold */
+}
+
+.intro {
+  margin-top: 0.75rem; /* mt-3 */
+  font-size: 0.875rem; /* text-sm */
+  color: #52525c; /* text-zinc-600 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .intro {
+    color: #9f9fa9; /* dark:text-zinc-400 */
+  }
+}
+
+.inlineCode {
+  border-radius: 0.25rem; /* rounded */
+  background-color: #0000000f; /* bg-black/[.06] */
+  padding-inline: 0.25rem; /* px-1 */
+  padding-block: 0.125rem; /* py-0.5 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .inlineCode {
+    background-color: #ffffff14; /* dark:bg-white/[.08] */
+  }
+}
+
+/* Bug 1: overlapping elements */
+.upgradeWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.upgradeButton {
+  border-radius: 0.5rem; /* rounded-lg */
+  background-color: #27272a; /* bg-zinc-800 */
+  padding-inline: 1rem; /* px-4 */
+  padding-block: 0.75rem; /* py-3 */
+  color: #ffffff; /* text-white */
+  border: none;
+}
+
+.newBadge {
+  position: absolute;
+  right: -0.75rem; /* -right-3 */
+  top: -0.75rem; /* -top-3 */
+  border-radius: 9999px; /* rounded-full */
+  background-color: #e30076; /* bg-pink-600 */
+  padding-inline: 0.5rem; /* px-2 */
+  padding-block: 0.25rem; /* py-1 */
+  font-size: 0.75rem; /* text-xs */
+  font-weight: 700; /* font-bold */
+  color: #ffffff; /* text-white */
+}
+
+@media (min-width: 1440px) {
+  .newBadge {
+    position: static;
+    margin-left: 0.5rem; /* ml-2 */
+    display: inline-block;
+  }
+}
+
+/* Bug 2: text overflow */
+.textOverflowLabel {
+  width: 160px;
+  overflow: hidden;
+  white-space: nowrap;
+  border-radius: 0.5rem; /* rounded-lg */
+  border: 1px solid #d4d4d8; /* border-zinc-300 */
+  padding: 0.5rem; /* p-2 */
+  font-size: 0.875rem; /* text-sm */
+}
+
+@media (prefers-color-scheme: dark) {
+  .textOverflowLabel {
+    border-color: #3f3f46; /* dark:border-zinc-700 */
+  }
+}
+
+@media (min-width: 1440px) {
+  .textOverflowLabel {
+    width: auto;
+    white-space: normal;
+  }
+}
+
+/* Bug 3: overflowing image */
+.overflowImageFrame {
+  max-width: 24rem; /* max-w-sm */
+  border-radius: 0.5rem; /* rounded-lg */
+  border: 1px solid #d4d4d8; /* border-zinc-300 */
+  padding: 0.5rem; /* p-2 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .overflowImageFrame {
+    border-color: #3f3f46; /* dark:border-zinc-700 */
+  }
+}
+
+.overflowingImage {
+  width: 500px;
+  max-width: none;
+}
+
+@media (min-width: 1440px) {
+  .overflowingImage {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+/* Bug 4: tiny tap target */
+.tinyTapTarget {
+  display: flex;
+  height: 18px;
+  width: 18px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px; /* rounded-full */
+  background-color: #3f3f46; /* bg-zinc-700 */
+  font-size: 0.75rem; /* text-xs */
+  font-weight: 700; /* font-bold */
+  color: #ffffff; /* text-white */
+  border: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .tinyTapTarget {
+    background-color: #d4d4d8; /* dark:bg-zinc-300 */
+    color: #18181b; /* dark:text-zinc-900 */
+  }
+}
+
+@media (min-width: 1440px) {
+  .tinyTapTarget {
+    height: 1.5rem; /* min-[1440px]:h-6 */
+    width: 1.5rem; /* min-[1440px]:w-6 */
+  }
+}
+
+/* Bug 5: cramped tap targets */
+.crampedRow {
+  display: flex;
+  gap: 0.25rem; /* gap-1 */
+}
+
+@media (min-width: 1440px) {
+  .crampedRow {
+    gap: 0.5rem; /* min-[1440px]:gap-2 */
+  }
+}
+
+.crampedButton {
+  border-radius: 0.25rem; /* rounded */
+  background-color: #3f3f46; /* bg-zinc-700 */
+  padding-inline: 0.75rem; /* px-3 */
+  padding-block: 0.5rem; /* py-2 */
+  font-size: 0.875rem; /* text-sm */
+  color: #ffffff; /* text-white */
+  border: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .crampedButton {
+    background-color: #d4d4d8; /* dark:bg-zinc-300 */
+    color: #18181b; /* dark:text-zinc-900 */
+  }
+}
+
+/* Bug 6: tiny text */
+.tinyText {
+  font-size: 10px;
+  color: #52525c; /* text-zinc-600 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .tinyText {
+    color: #9f9fa9; /* dark:text-zinc-400 */
+  }
+}
+
+@media (min-width: 1440px) {
+  .tinyText {
+    font-size: 0.75rem; /* min-[1440px]:text-xs */
+  }
+}
+
+/* Bug 7: distorted image */
+.distortedImage {
+  height: 200px;
+  width: 300px;
+  border-radius: 0.5rem; /* rounded-lg */
+  border: 1px solid #d4d4d8; /* border-zinc-300 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .distortedImage {
+    border-color: #3f3f46; /* dark:border-zinc-700 */
+  }
+}
+
+@media (min-width: 1440px) {
+  .distortedImage {
+    height: auto;
+    width: 100%;
+  }
+}
+
+.footer {
+  margin-top: 2.5rem; /* mt-10 */
+  font-size: 0.75rem; /* text-xs */
+  color: #9f9fa9; /* text-zinc-400 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .footer {
+    color: #52525c; /* dark:text-zinc-600 */
+  }
+}
+
+@media (min-width: 1440px) {
+  .footer {
+    color: #3f3f46; /* min-[1440px]:text-zinc-700 */
+  }
+}
+
+@media (min-width: 1440px) and (prefers-color-scheme: dark) {
+  .footer {
+    color: #d4d4d8; /* min-[1440px]:dark:text-zinc-300 */
+  }
+}
+
+.footerCode {
+  border-radius: 0.25rem; /* rounded */
+  background-color: #0000000f; /* bg-black/[.06] */
+  padding-inline: 0.25rem; /* px-1 */
+  padding-block: 0.125rem; /* py-0.5 */
+  color: #52525c; /* text-zinc-600 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .footerCode {
+    background-color: #ffffff14; /* dark:bg-white/[.08] */
+    color: #9f9fa9; /* dark:text-zinc-400 */
+  }
+}

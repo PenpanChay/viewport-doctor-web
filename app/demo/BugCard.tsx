@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import styles from './BugCard.module.css';
 
 /**
  * Shared "one bug, one card" layout used by both /demo and
@@ -20,15 +21,13 @@ export function BugCard({
   children: ReactNode;
 }) {
   return (
-    <section className="mt-6 rounded-xl border border-black/[.08] bg-white p-5 shadow-sm dark:border-white/[.1] dark:bg-zinc-900">
-      <div className="flex items-center gap-2">
-        <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs font-bold text-white dark:bg-zinc-200 dark:text-zinc-900">
-          {number}
-        </span>
-        <h2 className="text-sm font-semibold">{title}</h2>
+    <section className={styles.card}>
+      <div className={styles.header}>
+        <span className={styles.badge}>{number}</span>
+        <h2 className={styles.title}>{title}</h2>
       </div>
-      <p className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">{description}</p>
-      <div className="mt-3">{children}</div>
+      <p className={styles.description}>{description}</p>
+      <div className={styles.content}>{children}</div>
     </section>
   );
 }

@@ -164,7 +164,7 @@ describe('scanViewport (real browser, real Next.js server, no mocking)', () => {
 
   it('flags the 10px caption as tiny-text, below the 12px legibility minimum', async () => {
     const { issues } = await scanViewport(browser, `${baseUrl}/demo/edge-cases`, MOBILE);
-    const tinyText = issues.find((i) => i.check === 'tiny-text' && i.selector.includes('text-[10px]'));
+    const tinyText = issues.find((i) => i.check === 'tiny-text');
     expect(tinyText).toBeDefined();
     expect(tinyText!.message).toMatch(/10px/);
     expect(tinyText!.message).toMatch(/12px minimum/);
@@ -202,7 +202,7 @@ describe('scanViewport (real browser, real Next.js server, no mocking)', () => {
 
   it('flags the "Saved" toast (white text on teal) as low-contrast-text, below the 4.5:1 AA minimum', async () => {
     const { issues } = await scanViewport(browser, `${baseUrl}/demo/edge-cases`, MOBILE);
-    const contrast = issues.find((i) => i.check === 'low-contrast-text' && i.selector.includes('fixed'));
+    const contrast = issues.find((i) => i.check === 'low-contrast-text');
     expect(contrast).toBeDefined();
     expect(contrast!.message).toMatch(/below the WCAG AA minimum of 4.5:1/);
   }, 20000);
