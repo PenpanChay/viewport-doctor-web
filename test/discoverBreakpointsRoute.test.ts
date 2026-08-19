@@ -2,7 +2,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { NextRequest } from "next/server";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { startNextServer } from "../lib/nextServer.js";
+import { startNextServer } from "../lib/nextServer";
 import { POST } from "../app/api/discover-breakpoints/route";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

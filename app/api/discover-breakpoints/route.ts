@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chromium } from "playwright";
-// lib/*.js are plain CommonJS modules - allowJs + esModuleInterop in
-// tsconfig.json let TypeScript import them directly, no rewrite needed.
 import { discoverBreakpoints } from "@/lib/discoverBreakpoints";
 
 // Playwright needs a real Node.js process (it spawns a browser binary), so

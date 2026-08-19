@@ -92,7 +92,7 @@ const DEFAULT_VIEWPORTS: ViewportEntry[] = VIEWPORT_PRESETS.map((p) => ({
 
 // Human-readable label + icon + color per check type, so an issue reads at
 // a glance as "horizontal overflow" vs. "overlapping elements" rather than
-// a raw identifier. Keyed by the exact strings lib/checks.js produces.
+// a raw identifier. Keyed by the exact strings lib/checks.ts produces.
 const CHECK_META: Record<string, { label: string; icon: string; className: string }> = {
   "horizontal-overflow": {
     label: "Horizontal overflow",
@@ -543,7 +543,7 @@ export default function Home() {
                               // and missing-viewport-meta) can legitimately name a
                               // different element at each viewport, so they're
                               // matched by check alone - see
-                              // lib/suggestFixes.js's PAGE_LEVEL_CHECKS.
+                              // lib/suggestFixes.ts's PAGE_LEVEL_CHECKS.
                               const fix = page.fixSuggestions?.find(
                                 (f) => f.check === issue.check && (f.elementVaries || f.selector === issue.selector)
                               );
@@ -589,7 +589,7 @@ export default function Home() {
                                       {/* Issue Detail: Viewport / Element /
                                           Expected / Actual / delta, matching
                                           the concept's card exactly, straight
-                                          from lib/checks.js's structured
+                                          from lib/checks.ts's structured
                                           `details` - not scraped from prose. */}
                                       <dl className="grid grid-cols-[max-content_1fr] gap-x-3 gap-y-1 text-xs">
                                         <dt className="font-medium text-zinc-400 dark:text-zinc-500">Viewport</dt>

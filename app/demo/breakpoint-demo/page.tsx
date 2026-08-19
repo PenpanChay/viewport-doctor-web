@@ -1,11 +1,11 @@
 /**
- * A real page for "Breakpoint Discovery" (lib/discoverBreakpoints.js) to
+ * A real page for "Breakpoint Discovery" (lib/discoverBreakpoints.ts) to
  * scan - the fixed Mobile/Tablet/Desktop viewport presets can't demonstrate
  * this feature on their own, since the whole point is finding a layout
  * change that ISN'T at one of the standard preset widths.
  *
  * Two card grids, each a real repeated-item layout (6 <article> cards) so
- * lib/discoverBreakpoints.js's structural "columns per row" heuristic has
+ * lib/discoverBreakpoints.ts's structural "columns per row" heuristic has
  * something real to track:
  *
  * - #grid-standard: an ordinary Tailwind responsive grid (`grid-cols-1

@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-// lib/*.js are plain CommonJS modules - allowJs + esModuleInterop in
-// tsconfig.json let TypeScript import them directly, no rewrite needed.
 import { scanAllViewports } from "@/lib/scanViewport";
 
 // Playwright needs a real Node.js process (it spawns a browser binary), so

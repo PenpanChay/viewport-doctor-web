@@ -2,7 +2,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { NextRequest } from "next/server";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { startNextServer } from "../lib/nextServer.js";
+import { startNextServer } from "../lib/nextServer";
 import { POST as scanPOST } from "../app/api/scan/route";
 import { POST as previewPOST } from "../app/api/preview-fix/route";
 

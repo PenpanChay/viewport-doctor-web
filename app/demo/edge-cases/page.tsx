@@ -131,12 +131,12 @@ export default function EdgeCasesPage() {
         {/* Overflowing image: an image with a fixed px width wider than its
             container below 1440px, no max-width: 100%. Sized via Tailwind
             classes (not inline style) so a generated fixCode's class-based
-            selector (see lib/checks.js's describe()) has enough
+            selector (see lib/checks.ts's describe()) has enough
             specificity to actually override it - the same pattern that
             makes /demo's oversized-dialog fix genuinely resolvable. This
             image is also wide enough to push the whole page past a mobile
             viewport below 1440px - the real (if incidental) exercise of
-            horizontal-overflow's own fix, see test/previewFix.test.js. */}
+            horizontal-overflow's own fix, see test/previewFix.test.ts. */}
         <BugCard
           number={3}
           title="Overflowing image"
