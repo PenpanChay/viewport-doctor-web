@@ -170,7 +170,7 @@
 /* Bug 1: image spills out of its frame - the frame is responsive, the
    image inside it is a fixed 220px regardless of width. */
 .imageFrame {
-  width: 11.25rem; /* w-45 */
+  width: 10rem; /* w-40 */
   border-radius: 0.5rem; /* rounded-lg */
   border: 1px solid #d4d4d8; /* border-zinc-300 */
   padding: 0.5rem; /* p-2 */
