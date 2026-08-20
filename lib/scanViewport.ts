@@ -126,7 +126,13 @@ export async function scanViewport(
   const page = await context.newPage();
   let issues: Issue[] = [];
   let screenshot = '';
+  let cleanScreenshot = '';
   let navigationError: string | undefined;
+  // Defaults to 0,0 so a navigation error (no runChecksInBrowser call ever
+  // happens) still returns a valid, if unused, scroll offset instead of
+  // `undefined` reaching a consumer that assumes a number.
+  let scrollX = 0;
+  let scrollY = 0;
 
   try {
     try {
@@ -135,16 +141,29 @@ export async function scanViewport(
 
       const result = await page.evaluate(runChecksInBrowser);
       issues = result.issues;
+      scrollX = result.scrollX;
+      scrollY = result.scrollY;
+
+      // Capture a clean (no overlay) screenshot first - this is the crop
+      // source for the frontend's per-issue closeup (see app/page.tsx's
+      // IssueCrop). Cropping the *overlaid* screenshot instead would pull
+      // in whichever other issues' boxes/badges happen to fall in the
+      // padded crop window too - on a dense page that's most of them,
+      // which is exactly the "other numbers show up too" bug this avoids.
+      const cleanBuffer = await page.screenshot({ fullPage: true });
+      cleanScreenshot = `data:image/png;base64,${cleanBuffer.toString('base64')}`;
 
       if (issues.length > 0) {
-        await page.evaluate(drawOverlayInBrowser, { issues, scrollX: result.scrollX, scrollY: result.scrollY });
-      }
-
-      const buffer = await page.screenshot({ fullPage: true });
-      screenshot = `data:image/png;base64,${buffer.toString('base64')}`;
-
-      if (issues.length > 0) {
+        await page.evaluate(drawOverlayInBrowser, { issues, scrollX, scrollY });
+        const buffer = await page.screenshot({ fullPage: true });
+        screenshot = `data:image/png;base64,${buffer.toString('base64')}`;
         await page.evaluate(removeOverlayInBrowser);
+      } else {
+        // No issues - nothing was ever drawn, so the "highlighted" and
+        // "clean" screenshots are identical; reuse the one buffer instead
+        // of paying for a second full-page screenshot that would be
+        // pixel-for-pixel the same.
+        screenshot = cleanScreenshot;
       }
     } catch (err) {
       navigationError = err instanceof Error ? err.message : String(err);
@@ -153,7 +172,16 @@ export async function scanViewport(
     await context.close();
   }
 
-  return { url, viewport, issues, screenshot, ...(navigationError ? { navigationError } : {}) };
+  return {
+    url,
+    viewport,
+    issues,
+    screenshot,
+    cleanScreenshot,
+    scrollX,
+    scrollY,
+    ...(navigationError ? { navigationError } : {}),
+  };
 }
 
 export interface ScanAllViewportsOptions {
@@ -199,6 +227,9 @@ export async function scanAllViewports(options: ScanAllViewportsOptions): Promis
           height: viewport.height,
           issues: result.issues,
           screenshot: result.screenshot,
+          cleanScreenshot: result.cleanScreenshot,
+          scrollX: result.scrollX,
+          scrollY: result.scrollY,
           ...(result.navigationError ? { navigationError: result.navigationError } : {}),
         });
       }

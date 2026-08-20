@@ -32,7 +32,7 @@ const CARDS = [
   { title: 'Monitor Stand', price: '$45.00' },
 ];
 
-function ProductCard({ title, price }: { title: string; price: string }) {
+function ProductCard({ title, price }: Readonly<{ title: string; price: string }>) {
   return (
     <article className={styles.card}>
       <div className={styles.cardThumb} aria-hidden />

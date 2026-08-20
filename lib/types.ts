@@ -62,13 +62,31 @@ export interface ScanViewportResult {
   url: string;
   viewport: ViewportSize;
   issues: Issue[];
+  // Full-page screenshot with every issue's highlight box + badge drawn on
+  // it - used for the "see everything at once" overview.
   screenshot: string;
+  // Same full-page screenshot with NO overlay drawn - used as the crop
+  // source for a single issue's closeup (see app/page.tsx's IssueCrop), so
+  // cropping around one issue never pulls in a neighboring issue's
+  // box/badge the way cropping `screenshot` would on a dense page. Equal
+  // to `screenshot` (same string) when there were no issues to draw.
+  cleanScreenshot: string;
+  // Page scroll offset at the moment these screenshots were taken -
+  // `Issue.rect` is viewport-relative (getBoundingClientRect), so a
+  // consumer that wants to crop a region out of either screenshot around a
+  // specific issue needs to add these back in to land on the same
+  // page-absolute pixel drawOverlayInBrowser used.
+  scrollX: number;
+  scrollY: number;
   navigationError?: string;
 }
 
 export interface ScanResultPerViewport extends ViewportRequest {
   issues: Issue[];
   screenshot: string;
+  cleanScreenshot: string;
+  scrollX: number;
+  scrollY: number;
   navigationError?: string;
 }
 

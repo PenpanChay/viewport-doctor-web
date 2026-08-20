@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useId, useState } from "react";
+import { Fragment, useEffect, useId, useRef, useState } from "react";
 import { VIEWPORT_PRESETS, DEFAULT_ENABLED_PRESET_IDS } from "@/lib/viewportPresets";
 
 type ViewportEntry = {
@@ -35,6 +35,9 @@ type ScanViewportResult = {
   height: number;
   issues: ScanIssue[];
   screenshot: string;
+  cleanScreenshot: string;
+  scrollX: number;
+  scrollY: number;
   navigationError?: string;
 };
 
@@ -190,6 +193,125 @@ function parseLines(value: string): string[] {
 
 function plural(count: number, word: string): string {
   return `${count} ${word}${count === 1 ? "" : "s"}`;
+}
+
+// Zooms into a single issue's flagged element by cropping it out of the
+// *clean* (no-overlay) screenshot and drawing only THIS issue's own
+// highlight box + badge on top - entirely client-side, so it costs nothing
+// extra over the network even when a page has hundreds of issues (see the
+// "866 issues" case that motivated this).
+//
+// Cropping the shared, fully-overlaid `screenshot` instead (the first
+// version of this component did) pulls in whichever *other* issues'
+// boxes/badges happen to fall inside the padded crop window too - on a
+// dense page that's most of them, which read as "other numbers show up
+// too". Using `cleanScreenshot` as the source and drawing just this one
+// issue's box ourselves guarantees the closeup only ever shows this issue.
+//
+// `rect` is viewport-relative (Issue.rect, from getBoundingClientRect at
+// scan time) while the full-page screenshot is page-absolute, so scrollX/
+// scrollY (captured at the same moment, see lib/scanViewport.ts) are added
+// back in to land on the same page-absolute pixel the box belongs at.
+function IssueCrop({
+  cleanScreenshot,
+  rect,
+  scrollX,
+  scrollY,
+  badgeNumber,
+}: {
+  cleanScreenshot: string;
+  rect: { x: number; y: number; width: number; height: number };
+  scrollX: number;
+  scrollY: number;
+  badgeNumber: number;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const img = new window.Image();
+    img.onload = () => {
+      if (cancelled) return;
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext("2d");
+      if (!canvas || !ctx) return;
+      setFailed(false);
+
+      // Pad generously around small elements (a 24px button, say) so the
+      // crop still reads as a recognizable piece of the page instead of a
+      // sliver with a pink box in it and nothing else for context.
+      const padX = Math.max(60, rect.width * 0.6);
+      const padY = Math.max(60, rect.height * 0.6);
+
+      let sx = rect.x + scrollX - padX;
+      let sy = rect.y + scrollY - padY;
+      let sw = rect.width + padX * 2;
+      let sh = rect.height + padY * 2;
+
+      // Clamp the crop window to the screenshot's actual bounds - reading
+      // past the edge of a canvas source image doesn't throw, it just
+      // draws blank, which would look like a broken crop rather than
+      // "this issue was near the page edge".
+      sx = Math.max(0, Math.min(sx, img.naturalWidth - 1));
+      sy = Math.max(0, Math.min(sy, img.naturalHeight - 1));
+      sw = Math.max(1, Math.min(sw, img.naturalWidth - sx));
+      sh = Math.max(1, Math.min(sh, img.naturalHeight - sy));
+
+      canvas.width = Math.round(sw);
+      canvas.height = Math.round(sh);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+
+      // This issue's own box, positioned relative to the crop window -
+      // no other issue's rect ever enters this function, so nothing else
+      // can get drawn.
+      const boxLeft = rect.x + scrollX - sx;
+      const boxTop = rect.y + scrollY - sy;
+      const boxW = Math.max(rect.width, 2);
+      const boxH = Math.max(rect.height, 2);
+
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "#ec4899";
+      ctx.strokeRect(boxLeft, boxTop, boxW, boxH);
+
+      const badgeRadius = 11;
+      const badgeCx = Math.max(badgeRadius, boxLeft);
+      const badgeCy = Math.max(badgeRadius, boxTop);
+      ctx.beginPath();
+      ctx.arc(badgeCx, badgeCy, badgeRadius, 0, Math.PI * 2);
+      ctx.fillStyle = "#ec4899";
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(255,255,255,0.9)";
+      ctx.stroke();
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 12px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(String(badgeNumber), badgeCx, badgeCy + 1);
+    };
+    img.onerror = () => {
+      if (!cancelled) setFailed(true);
+    };
+    img.src = cleanScreenshot;
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cleanScreenshot, rect.x, rect.y, rect.width, rect.height, scrollX, scrollY, badgeNumber]);
+
+  if (failed) return null;
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-black/[.08] bg-zinc-100 dark:border-white/[.1] dark:bg-zinc-800/60">
+      <p className="px-3 pt-2 text-[11px] font-medium text-zinc-400 dark:text-zinc-500">
+        🔍 Closeup - just this issue, cropped from the clean screenshot
+      </p>
+      <canvas ref={canvasRef} className="block w-full" />
+    </div>
+  );
 }
 
 export default function Home() {
@@ -622,6 +744,16 @@ export default function Home() {
                                         )}
                                       </dl>
 
+                                      {activeResult.cleanScreenshot && (
+                                        <IssueCrop
+                                          cleanScreenshot={activeResult.cleanScreenshot}
+                                          rect={issue.rect}
+                                          scrollX={activeResult.scrollX}
+                                          scrollY={activeResult.scrollY}
+                                          badgeNumber={i + 1}
+                                        />
+                                      )}
+
                                       {fix && (
                                         <div className="flex flex-col gap-1.5">
                                           <p className="text-xs leading-relaxed text-emerald-800 dark:text-emerald-300">
@@ -647,7 +779,8 @@ export default function Home() {
                           <>
                             {activeResult.issues.length > 0 && (
                               <p className="text-xs text-zinc-400 dark:text-zinc-500">
-                                Screenshot - badge numbers match the issue list above.
+                                Full-page screenshot for context - badge numbers match the issue list above. Open an
+                                issue above for a closeup of just that one.
                               </p>
                             )}
                             {/* eslint-disable-next-line @next/next/no-img-element */}
