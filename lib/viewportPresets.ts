@@ -21,14 +21,14 @@ export const VIEWPORT_PRESETS: ViewportPreset[] = [
 ];
 
 // Which of the 8 presets are enabled in the scan form by default - a
-// representative one per device class rather than all 8 (keeps a first-run
-// scan fast), matching this tool's own "Select Viewports" mockup example
-// (Mobile 375x667, Mobile 390x844, Tablet 768x1024, Desktop 1280x720,
-// Desktop 1440x900).
+// representative sizes across each device class rather than all 8 (keeps a
+// first-run scan focused), including the clean Large Desktop result used by
+// the bundled edge-case demo.
 export const DEFAULT_ENABLED_PRESET_IDS: Set<string> = new Set([
   'mobile',
   'mobile-l',
   'tablet',
   'laptop',
   'desktop',
+  'large-desktop',
 ]);

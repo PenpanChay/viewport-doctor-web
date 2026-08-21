@@ -326,7 +326,7 @@ export default function Home() {
 
   function loadDemoExample() {
     setBaseUrl(window.location.origin);
-    setPagesInput("/demo\n/demo/edge-cases");
+    setPagesInput("/demo\n/demo/edge-cases\n/demo/breakpoint-demo");
     // Clears any storage state left over from "Try a login-protected demo" -
     // these pages don't need it, and leaving a stale session in the field
     // would silently carry over into whatever the user scans next.
