@@ -1,4 +1,5 @@
 import type { Browser } from 'playwright';
+import { applyStealth, STEALTH_USER_AGENT } from './browserStealth';
 import { runChecksInBrowser } from './checks';
 import { PAGE_LEVEL_CHECKS } from './suggestFixes';
 import type {
@@ -45,7 +46,12 @@ export async function previewFix(
   const timeoutMs = options.timeoutMs ?? 15000;
   const settleMs = options.settleMs ?? 400;
 
-  const context = await browser.newContext({ viewport });
+  // Same rationale as scanViewport.ts - see lib/browserStealth.ts - so a
+  // fix preview on a fingerprint-gated page doesn't get its own bounce back
+  // to a login/access-denied page independently of the scan that found the
+  // issue being previewed.
+  const context = await browser.newContext({ viewport, userAgent: STEALTH_USER_AGENT });
+  await applyStealth(context);
   const page = await context.newPage();
   let before: Issue[] = [];
   let after: Issue[] = [];

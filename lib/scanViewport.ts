@@ -1,6 +1,8 @@
 import type { Browser } from 'playwright';
 import { chromium } from 'playwright';
+import { applyStealth, STEALTH_LAUNCH_ARGS, STEALTH_USER_AGENT } from './browserStealth';
 import { runChecksInBrowser } from './checks';
+import { restoreSessionStorage } from './sessionStorageState';
 import { buildFixSuggestions } from './suggestFixes';
 import type {
   Issue,
@@ -8,6 +10,7 @@ import type {
   ScanAllViewportsResult,
   ScanResultPerViewport,
   ScanViewportResult,
+  SessionStorageState,
   StorageState,
   ViewportRequest,
   ViewportSize,
@@ -111,6 +114,15 @@ export interface ScanViewportOptions {
   // already-authenticated session - see ScanAllViewportsOptions below for
   // why this is captured once per scan rather than per viewport.
   storageState?: StorageState;
+  // sessionStorage captured alongside storageState (see
+  // lib/sessionStorageState.ts) - storageState alone can never carry this,
+  // no matter how complete or fresh it is, since Playwright's storageState
+  // mechanism doesn't cover sessionStorage at all. A site that keeps any
+  // part of its session there will bounce a scan back to a login page even
+  // with a perfectly valid, complete storageState - see
+  // lib/loginStorageState.ts's captureLoginStorageState, which returns this
+  // from the same login that produced the storageState above.
+  sessionStorageState?: SessionStorageState;
 }
 
 /**
@@ -127,7 +139,18 @@ export async function scanViewport(
   const timeoutMs = options.timeoutMs ?? 15000;
   const settleMs = options.settleMs ?? 500;
 
-  const context = await browser.newContext({ viewport, storageState: options.storageState });
+  const context = await browser.newContext({
+    viewport,
+    storageState: options.storageState,
+    // See lib/browserStealth.ts - a realistic desktop UA plus the JS-level
+    // patches applied via applyStealth() below are what keep a client-side
+    // fingerprint/bot-detection check on the target site from treating this
+    // context as automated and bouncing an otherwise-valid storageState
+    // session back to a login page.
+    userAgent: STEALTH_USER_AGENT,
+  });
+  await applyStealth(context);
+  await restoreSessionStorage(context, options.sessionStorageState);
   const page = await context.newPage();
   let issues: Issue[] = [];
   let screenshot = '';
@@ -199,6 +222,9 @@ export interface ScanAllViewportsOptions {
   // logged-in session has to be handed to each one explicitly rather than
   // relying on it persisting from a prior navigation).
   storageState?: StorageState;
+  // See ScanViewportOptions.sessionStorageState above - applied the same
+  // way, to every context this scan creates.
+  sessionStorageState?: SessionStorageState;
 }
 
 /**
@@ -208,7 +234,7 @@ export interface ScanAllViewportsOptions {
  * the risk in a server API route with a fixed execution time budget.
  */
 export async function scanAllViewports(options: ScanAllViewportsOptions): Promise<ScanAllViewportsResult> {
-  const { urls, viewports, timeoutMs, settleMs, storageState } = options;
+  const { urls, viewports, timeoutMs, settleMs, storageState, sessionStorageState } = options;
 
   if (!urls || urls.length === 0) {
     throw new Error('No URLs to scan - provide at least one page.');
@@ -217,7 +243,10 @@ export async function scanAllViewports(options: ScanAllViewportsOptions): Promis
     throw new Error('No viewports to check - select at least one.');
   }
 
-  const browser = await chromium.launch();
+  // See lib/browserStealth.ts - removes the clearest CDP-automation signal
+  // at the browser-process level (belt-and-suspenders alongside the
+  // per-context JS patches applied in scanViewport()).
+  const browser = await chromium.launch({ args: STEALTH_LAUNCH_ARGS });
   const pages: PageScanResult[] = [];
 
   try {
@@ -228,6 +257,7 @@ export async function scanAllViewports(options: ScanAllViewportsOptions): Promis
           timeoutMs,
           settleMs,
           storageState,
+          sessionStorageState,
         });
         // Flatten {viewport: {width, height}} to top-level width/height so
         // API consumers get one flat shape per viewport result instead of

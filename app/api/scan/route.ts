@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { scanAllViewports } from "@/lib/scanViewport";
-import { resolveStorageState } from "@/lib/resolveStorageState";
+import { resolveSessionStorageState, resolveStorageState } from "@/lib/resolveStorageState";
 
 // Playwright needs a real Node.js process (it spawns a browser binary), so
 // this route can't run on the Edge runtime.
@@ -23,6 +23,12 @@ type ScanRequestBody = {
   // wall without this route ever handling a username/password itself. See
   // resolveStorageState() below for the accepted shapes.
   storageState?: unknown;
+  // sessionStorage captured alongside storageState above (see
+  // /api/login-storage-state and lib/sessionStorageState.ts) - required in
+  // addition to storageState whenever the target site keeps any part of
+  // its session in sessionStorage, which storageState can never carry no
+  // matter how it was captured.
+  sessionStorageState?: unknown;
 };
 
 function resolveUrls(body: ScanRequestBody): string[] {
@@ -85,6 +91,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: storageState.error }, { status: 400 });
   }
 
+  const sessionStorageState = resolveSessionStorageState(body.sessionStorageState);
+  if (sessionStorageState.error) {
+    return NextResponse.json({ error: sessionStorageState.error }, { status: 400 });
+  }
+
   try {
     const results = await scanAllViewports({
       urls,
@@ -92,6 +103,7 @@ export async function POST(request: NextRequest) {
       timeoutMs: body.timeoutMs,
       settleMs: body.settleMs,
       storageState: storageState.value,
+      sessionStorageState: sessionStorageState.value,
     });
 
     return NextResponse.json(results);

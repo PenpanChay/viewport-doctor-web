@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chromium } from "playwright";
+import { STEALTH_LAUNCH_ARGS } from "@/lib/browserStealth";
 import { previewFix, evaluatePreview, NOT_PREVIEWABLE_CHECKS } from "@/lib/previewFix";
 
 // Playwright needs a real Node.js process (it spawns a browser binary), so
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     height: Math.min(Math.max(Math.round(height), MIN_DIMENSION), MAX_DIMENSION),
   };
 
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ args: STEALTH_LAUNCH_ARGS });
   try {
     const { before, after, navigationError, cssError } = await previewFix(browser, body.url, viewport, body.css);
 

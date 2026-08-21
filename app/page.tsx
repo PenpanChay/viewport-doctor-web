@@ -174,18 +174,21 @@ function plural(count: number, word: string): string {
   return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
 
-// Playwright storage state (cookies + localStorage) is pasted in as raw
-// JSON rather than a username/password, so this app never handles real
-// credentials - see the "Storage state" field below and the shared
+// Both Playwright storage state (cookies + localStorage) and its
+// sessionStorage counterpart (see lib/sessionStorageState.ts - Playwright's
+// own storageState() has no concept of sessionStorage at all, so a site
+// that keeps any part of its session there needs this second field too) are
+// pasted in as raw JSON rather than a username/password, so this app never
+// handles real credentials - see the two fields below and the shared
 // lib/resolveStorageState.ts, which re-validates this same JSON server-side
-// before it ever reaches a browser context.
-function parseStorageStateInput(raw: string): { value?: unknown; error?: string } {
+// before either ever reaches a browser context.
+function parseJsonFieldInput(raw: string, fieldLabel: string): { value?: unknown; error?: string } {
   const trimmed = raw.trim();
   if (!trimmed) return {};
   try {
     return { value: JSON.parse(trimmed) };
   } catch {
-    return { error: "Storage state must be valid JSON - paste the exported storageState file's contents as-is." };
+    return { error: `${fieldLabel} must be valid JSON - paste the exported value's contents as-is.` };
   }
 }
 
@@ -312,6 +315,7 @@ export default function Home() {
   const [baseUrl, setBaseUrl] = useState("");
   const [pagesInput, setPagesInput] = useState("");
   const [storageStateInput, setStorageStateInput] = useState("");
+  const [sessionStorageStateInput, setSessionStorageStateInput] = useState("");
   const [viewports, setViewports] = useState<ViewportEntry[]>(DEFAULT_VIEWPORTS);
   const [customWidth, setCustomWidth] = useState("");
   const [customHeight, setCustomHeight] = useState("");
@@ -327,10 +331,12 @@ export default function Home() {
   function loadDemoExample() {
     setBaseUrl(window.location.origin);
     setPagesInput("/demo\n/demo/edge-cases\n/demo/breakpoint-demo");
-    // Clears any storage state left over from "Try a login-protected demo" -
-    // these pages don't need it, and leaving a stale session in the field
-    // would silently carry over into whatever the user scans next.
+    // Clears any storage/sessionStorage state left over from "Try a
+    // login-protected demo" - these pages don't need it, and leaving a
+    // stale session in either field would silently carry over into
+    // whatever the user scans next.
     setStorageStateInput("");
+    setSessionStorageStateInput("");
     setResult(null);
     setError(null);
   }
@@ -352,6 +358,10 @@ export default function Home() {
         throw new Error(data?.error ?? `Request failed with status ${res.status}`);
       }
       setStorageStateInput(JSON.stringify(data, null, 2));
+      // The bundled demo keeps its whole session in a cookie (see
+      // lib/demoAuth.ts) - nothing in sessionStorage, so any leftover value
+      // here from a previous real-site attempt would just be dead weight.
+      setSessionStorageStateInput("");
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -397,9 +407,13 @@ export default function Home() {
         throw new Error("Select at least one viewport to check.");
       }
 
-      const storageState = parseStorageStateInput(storageStateInput);
+      const storageState = parseJsonFieldInput(storageStateInput, "Storage state");
       if (storageState.error) {
         throw new Error(storageState.error);
+      }
+      const sessionStorageState = parseJsonFieldInput(sessionStorageStateInput, "Session storage state");
+      if (sessionStorageState.error) {
+        throw new Error(sessionStorageState.error);
       }
 
       const res = await fetch("/api/scan", {
@@ -410,6 +424,7 @@ export default function Home() {
           pages,
           viewports: activeViewports.map((v) => ({ label: v.label, width: v.width, height: v.height })),
           ...(storageState.value !== undefined ? { storageState: storageState.value } : {}),
+          ...(sessionStorageState.value !== undefined ? { sessionStorageState: sessionStorageState.value } : {}),
         }),
       });
 
@@ -517,6 +532,31 @@ export default function Home() {
                 value={storageStateInput}
                 onChange={(e) => setStorageStateInput(e.target.value)}
                 placeholder='{"cookies": [...], "origins": [...]}'
+                rows={3}
+                spellCheck={false}
+                className="rounded-lg border border-black/[.1] bg-transparent px-3 py-2 font-mono text-xs outline-none focus:border-sky-500 dark:border-white/[.15]"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium">🔒 Session storage state (optional) - only if the site above needs it</span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                Playwright&apos;s <code className="rounded bg-black/[.06] px-1 py-0.5 dark:bg-white/[.08]">
+                  context.storageState()
+                </code>{" "}
+                above only ever covers cookies + localStorage - it has no way to capture sessionStorage at all. If a
+                scan still lands on what looks like a login page despite a valid, complete storage state above, the
+                target site likely keeps part of its session in sessionStorage instead - paste the{" "}
+                <code className="rounded bg-black/[.06] px-1 py-0.5 dark:bg-white/[.08]">sessionStorageState</code>{" "}
+                value from <code className="rounded bg-black/[.06] px-1 py-0.5 dark:bg-white/[.08]">
+                  /api/login-storage-state
+                </code>
+                &apos;s response here (see lib/sessionStorageState.ts). Leave empty for sites that don&apos;t need it.
+              </span>
+              <textarea
+                value={sessionStorageStateInput}
+                onChange={(e) => setSessionStorageStateInput(e.target.value)}
+                placeholder='[{"origin": "https://example.com", "sessionStorage": [{"name": "...", "value": "..."}]}]'
                 rows={3}
                 spellCheck={false}
                 className="rounded-lg border border-black/[.1] bg-transparent px-3 py-2 font-mono text-xs outline-none focus:border-sky-500 dark:border-white/[.15]"

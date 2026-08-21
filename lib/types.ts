@@ -7,13 +7,49 @@
  * every file that touches them.
  */
 
-import type { Browser } from 'playwright';
+import type { Browser, BrowserContext } from 'playwright';
 
 // Derived from Browser['newContext'] rather than hand-declared, so this
 // stays byte-for-byte compatible with whatever shape the installed
 // Playwright version actually accepts (cookies[] + origins[], or a file
 // path string) without duplicating that shape here.
 export type StorageState = NonNullable<Parameters<Browser['newContext']>[0]>['storageState'];
+
+// Derived from BrowserContext['storageState'] instead - its return value is
+// always the parsed { cookies, origins } object, never the file-path-string
+// form `StorageState` above also has to allow as an *input* shape. Used by
+// lib/loginStorageState.ts (whose whole job is calling context.storageState()
+// and handing the result back), so callers get the real, narrower shape -
+// a plain object with real cookies/origins arrays - instead of having to
+// re-narrow the broader `StorageState` union every time.
+export type StorageStateData = Awaited<ReturnType<BrowserContext['storageState']>>;
+
+// Playwright's storageState (StorageState/StorageStateData above) only ever
+// covers cookies + localStorage - sessionStorage is entirely out of scope
+// for it, with no built-in capture or replay mechanism at all. A site that
+// keeps any part of its client-side session in sessionStorage rather than
+// localStorage will silently lose that piece on every storageState-based
+// replay: captured fine, looks complete, but the site's own JS finds
+// nothing there on the next load. See lib/sessionStorageState.ts for how
+// this gets captured (right after login, alongside the real storageState -
+// lib/loginStorageState.ts) and replayed (via context.addInitScript() into
+// a scan - lib/scanViewport.ts), since neither operation is something
+// Playwright's own storageState API can do.
+export interface SessionStorageEntry {
+  name: string;
+  value: string;
+}
+
+export interface SessionStorageOriginState {
+  origin: string;
+  sessionStorage: SessionStorageEntry[];
+}
+
+// One entry per distinct origin sessionStorage was captured from - usually
+// just the one origin a login/scan target lives on, but kept as an array
+// (mirroring StorageStateData's own origins[]) rather than a single flat
+// object in case a caller's flow spans more than one origin.
+export type SessionStorageState = SessionStorageOriginState[];
 
 export interface Rect {
   x: number;

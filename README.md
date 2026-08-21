@@ -71,31 +71,100 @@ screenshot, and a suggested fix (prose + ready-to-paste CSS).
   plain flag) for exercising the storage-state feature below without a real
   website's credentials.
 
-## Scanning pages behind a login (storageState)
+## Scanning pages behind a login (storageState + sessionStorageState)
 
-`/api/scan` accepts an optional `storageState` field — a [Playwright storage
-state](https://playwright.dev/docs/auth) object (`{ cookies, origins }`)
-captured from an already-authenticated browser session. When present, every
-page/viewport scanned reuses that session instead of an anonymous one, so
-pages behind a login wall get scanned for real instead of redirecting to a
-login page. It works with any cookie-based session, encrypted/opaque tokens
-included — Playwright replays the cookie byte-for-byte without needing to
-understand what's inside it.
+`/api/scan` accepts two optional fields for authenticated scans:
 
-**Try it against the bundled demo (no external site needed):** in the app,
-click **🔑 Try a login-protected demo** — it logs into `/demo/login` with a
-real headless browser server-side and fills the storage-state field for you.
+- **`storageState`** — a [Playwright storage state](https://playwright.dev/docs/auth)
+  object (`{ cookies, origins }`) captured from an already-authenticated
+  browser session. When present, every page/viewport scanned reuses that
+  session instead of an anonymous one, so pages behind a login wall get
+  scanned for real instead of redirecting to a login page. It works with any
+  cookie-based session, encrypted/opaque tokens included — Playwright replays
+  the cookie byte-for-byte without needing to understand what's inside it.
+- **`sessionStorageState`** — see the next section. Only needed for sites
+  that keep part of their session in `sessionStorage`.
 
-**Export one from a real site you're authorized to scan:**
+### Sites that also need sessionStorage
+
+Playwright's `storageState()` API — and therefore the `storageState` field
+above, however it was captured — **only ever covers cookies and
+`localStorage`. It has no concept of `sessionStorage` at all.** Some sites
+(SSO/CMS-style login flows in particular) keep a piece of the session in
+`sessionStorage`, so a scan can still bounce back to what looks like a login
+page even with a valid, complete `storageState` — because the server-side
+cookie check passes, but a client-side check reading `sessionStorage` fails.
+
+If that happens, capture the site's `sessionStorage` separately and pass it
+as `sessionStorageState` — an array of
+`{ origin, sessionStorage: [{ name, value }] }` objects, one per origin. The
+app's UI has a dedicated **"🔒 Session storage state"** field for it, right
+below "Storage state". Leave it empty for sites that don't need it.
+
+### Getting storageState + sessionStorageState
+
+**Option A — try it against the bundled demo (no external site needed):** in
+the app, click **🔑 Try a login-protected demo** — it logs into `/demo/login`
+with a real headless browser server-side and fills the storage-state field
+for you. (The demo keeps its whole session in a cookie, so it never needs
+`sessionStorageState`.)
+
+**Option B — `POST /api/login-storage-state` (automated, any site):** drives
+a real headless browser to a login form, fills it in, submits, and returns
+both `storageState` and `sessionStorageState` in one response:
+
+```bash
+curl -X POST http://localhost:3000/api/login-storage-state \
+  -H "Content-Type: application/json" \
+  -d '{
+    "loginUrl": "https://your-site/login",
+    "fields": [
+      { "selector": "#email", "value": "your-email" },
+      { "selector": "#password", "value": "your-password" }
+    ],
+    "submitSelector": "button[type=submit]",
+    "successUrlPattern": "/dashboard"
+  }'
+```
+
+Paste `loginUrl` as the login page's entry point (not a URL with a one-time
+`?state=...`/`?token=...` param some SSO flows redirect to — those are
+generated fresh per visit and can't be hardcoded). `successUrlPattern` is a
+regex checked against the post-login URL; omit it to fall back to "did the
+URL change at all" instead. Paste the response's `storageState` and
+`sessionStorageState` straight into the app's two fields, or into
+`/api/scan`'s body directly under the same field names.
+
+This endpoint accepts credentials in the request body so it can type them
+into the target site's own form — see the security note in
+`app/api/login-storage-state/route.ts` before exposing it beyond local/trusted
+use.
+
+**Option C — export manually (no endpoint handles your credentials at all):**
 
 ```bash
 npx playwright open --save-storage=state.json https://your-site/login
 ```
 
-Log in manually in the browser window that opens, then **close the window**
-(not the terminal) — Playwright writes `state.json` at that point. Paste its
-contents into the app's "Storage state" field alongside the base URL/pages to
-scan.
+Log in manually in the browser window that opens. **Before closing it**, if
+the site might use `sessionStorage`, open DevTools' console on that tab and
+run:
+
+```js
+copy(JSON.stringify([{
+  origin: window.location.origin,
+  sessionStorage: Object.keys(window.sessionStorage).map(name => ({
+    name, value: window.sessionStorage.getItem(name)
+  }))
+}], null, 2))
+```
+
+(Use DevTools' `copy()` helper, not a manual select-and-copy of the printed
+result — copying the console's own quoted/escaped display of a string
+instead of the raw value is the most common cause of a "must be valid JSON"
+error here.) Paste that into the app's "Session storage state" field. Then
+**close the window** (not the terminal) — Playwright writes `state.json` at
+that point; paste its contents into "Storage state".
 
 `state.json` (and similarly-named exports) are gitignored: the file is a live
 authenticated session, equivalent to a password — never commit or share one,
@@ -105,7 +174,8 @@ and prefer a dedicated test account over a real user's login.
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /api/scan` | `{ baseUrl+pages or urls, viewports, storageState? }` → issues + screenshot + fix suggestions per page/viewport |
+| `POST /api/scan` | `{ baseUrl+pages or urls, viewports, storageState?, sessionStorageState? }` → issues + screenshot + fix suggestions per page/viewport |
+| `POST /api/login-storage-state` | `{ loginUrl, fields, submitSelector, successUrlPattern? }` → logs in with a real browser and returns `{ storageState, sessionStorageState }` for use with `/api/scan` above |
 | `POST /api/preview-fix` | Injects a `fixCode` snippet into a fresh load and reports `resolved`/`improved`/`unresolved`/`worse` |
 
 ## Testing
