@@ -8,6 +8,7 @@ import type {
   ScanAllViewportsResult,
   ScanResultPerViewport,
   ScanViewportResult,
+  StorageState,
   ViewportRequest,
   ViewportSize,
 } from './types';
@@ -106,6 +107,10 @@ function removeOverlayInBrowser() {
 export interface ScanViewportOptions {
   timeoutMs?: number;
   settleMs?: number;
+  // Playwright storage state (cookies + localStorage) captured from an
+  // already-authenticated session - see ScanAllViewportsOptions below for
+  // why this is captured once per scan rather than per viewport.
+  storageState?: StorageState;
 }
 
 /**
@@ -122,7 +127,7 @@ export async function scanViewport(
   const timeoutMs = options.timeoutMs ?? 15000;
   const settleMs = options.settleMs ?? 500;
 
-  const context = await browser.newContext({ viewport });
+  const context = await browser.newContext({ viewport, storageState: options.storageState });
   const page = await context.newPage();
   let issues: Issue[] = [];
   let screenshot = '';
@@ -189,6 +194,11 @@ export interface ScanAllViewportsOptions {
   viewports: ViewportRequest[];
   timeoutMs?: number;
   settleMs?: number;
+  // Applied to every context created for this scan (every url x viewport
+  // pair gets its own fresh context - see scanViewport above - so a
+  // logged-in session has to be handed to each one explicitly rather than
+  // relying on it persisting from a prior navigation).
+  storageState?: StorageState;
 }
 
 /**
@@ -198,7 +208,7 @@ export interface ScanAllViewportsOptions {
  * the risk in a server API route with a fixed execution time budget.
  */
 export async function scanAllViewports(options: ScanAllViewportsOptions): Promise<ScanAllViewportsResult> {
-  const { urls, viewports, timeoutMs, settleMs } = options;
+  const { urls, viewports, timeoutMs, settleMs, storageState } = options;
 
   if (!urls || urls.length === 0) {
     throw new Error('No URLs to scan - provide at least one page.');
@@ -217,6 +227,7 @@ export async function scanAllViewports(options: ScanAllViewportsOptions): Promis
         const result = await scanViewport(browser, url, { width: viewport.width, height: viewport.height }, {
           timeoutMs,
           settleMs,
+          storageState,
         });
         // Flatten {viewport: {width, height}} to top-level width/height so
         // API consumers get one flat shape per viewport result instead of

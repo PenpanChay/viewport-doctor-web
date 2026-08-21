@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chromium } from "playwright";
 import { discoverBreakpoints } from "@/lib/discoverBreakpoints";
+import { resolveStorageState } from "@/lib/resolveStorageState";
 
 // Playwright needs a real Node.js process (it spawns a browser binary), so
 // this route can't run on the Edge runtime.
@@ -17,6 +18,7 @@ type DiscoverRequestBody = {
   minWidth?: number;
   maxWidth?: number;
   height?: number;
+  storageState?: unknown;
 };
 
 const MIN_DIMENSION = 200;
@@ -56,9 +58,19 @@ export async function POST(request: NextRequest) {
     ? Math.min(Math.max(Math.round(heightInput), MIN_DIMENSION), MAX_DIMENSION)
     : 900;
 
+  const storageState = resolveStorageState(body.storageState);
+  if (storageState.error) {
+    return NextResponse.json({ error: storageState.error }, { status: 400 });
+  }
+
   const browser = await chromium.launch();
   try {
-    const result = await discoverBreakpoints(browser, body.url, { minWidth, maxWidth, height });
+    const result = await discoverBreakpoints(browser, body.url, {
+      minWidth,
+      maxWidth,
+      height,
+      storageState: storageState.value,
+    });
 
     if (result.navigationError) {
       return NextResponse.json(

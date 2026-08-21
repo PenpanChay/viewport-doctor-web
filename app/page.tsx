@@ -195,6 +195,21 @@ function plural(count: number, word: string): string {
   return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
 
+// Playwright storage state (cookies + localStorage) is pasted in as raw
+// JSON rather than a username/password, so this app never handles real
+// credentials - see the "Storage state" field below and the shared
+// lib/resolveStorageState.ts, which re-validates this same JSON server-side
+// before it ever reaches a browser context.
+function parseStorageStateInput(raw: string): { value?: unknown; error?: string } {
+  const trimmed = raw.trim();
+  if (!trimmed) return {};
+  try {
+    return { value: JSON.parse(trimmed) };
+  } catch {
+    return { error: "Storage state must be valid JSON - paste the exported storageState file's contents as-is." };
+  }
+}
+
 // Zooms into a single issue's flagged element by cropping it out of the
 // *clean* (no-overlay) screenshot and drawing only THIS issue's own
 // highlight box + badge on top - entirely client-side, so it costs nothing
@@ -317,11 +332,13 @@ function IssueCrop({
 export default function Home() {
   const [baseUrl, setBaseUrl] = useState("");
   const [pagesInput, setPagesInput] = useState("");
+  const [storageStateInput, setStorageStateInput] = useState("");
   const [viewports, setViewports] = useState<ViewportEntry[]>(DEFAULT_VIEWPORTS);
   const [customWidth, setCustomWidth] = useState("");
   const [customHeight, setCustomHeight] = useState("");
   const [customLabel, setCustomLabel] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingLoginDemo, setLoadingLoginDemo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ScanPage[] | null>(null);
   const [activeViewport, setActiveViewport] = useState<Record<string, string>>({});
@@ -336,6 +353,30 @@ export default function Home() {
     setPagesInput("/demo\n/demo/edge-cases\n/demo/breakpoint-demo");
     setResult(null);
     setError(null);
+  }
+
+  // Logs into the bundled /demo/login page with a real headless browser
+  // server-side (see /api/demo-login-storage-state) and drops the resulting
+  // storageState straight into the field below, so trying the auth feature
+  // never requires a real website's credentials - just this button.
+  async function loadLoginDemo() {
+    setBaseUrl(window.location.origin);
+    setPagesInput("/demo/protected");
+    setResult(null);
+    setError(null);
+    setLoadingLoginDemo(true);
+    try {
+      const res = await fetch("/api/demo-login-storage-state", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || (data && typeof data === "object" && "error" in data)) {
+        throw new Error(data?.error ?? `Request failed with status ${res.status}`);
+      }
+      setStorageStateInput(JSON.stringify(data, null, 2));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoadingLoginDemo(false);
+    }
   }
 
   function toggleViewport(id: string) {
@@ -377,6 +418,11 @@ export default function Home() {
         throw new Error("Select at least one viewport to check.");
       }
 
+      const storageState = parseStorageStateInput(storageStateInput);
+      if (storageState.error) {
+        throw new Error(storageState.error);
+      }
+
       const res = await fetch("/api/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -384,6 +430,7 @@ export default function Home() {
           baseUrl: baseUrl.trim(),
           pages,
           viewports: activeViewports.map((v) => ({ label: v.label, width: v.width, height: v.height })),
+          ...(storageState.value !== undefined ? { storageState: storageState.value } : {}),
         }),
       });
 
@@ -411,10 +458,18 @@ export default function Home() {
   async function runBreakpointDiscovery(pageUrl: string) {
     setBreakpointState((prev) => ({ ...prev, [pageUrl]: { loading: true, error: null, result: null } }));
     try {
+      const storageState = parseStorageStateInput(storageStateInput);
+      if (storageState.error) {
+        throw new Error(storageState.error);
+      }
+
       const res = await fetch("/api/discover-breakpoints", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: pageUrl }),
+        body: JSON.stringify({
+          url: pageUrl,
+          ...(storageState.value !== undefined ? { storageState: storageState.value } : {}),
+        }),
       });
       const data: BreakpointResponse = await res.json();
       if (!res.ok || "error" in data) {
@@ -448,13 +503,24 @@ export default function Home() {
         <section className="mb-10 rounded-xl border border-black/[.08] bg-white p-6 shadow-sm dark:border-white/[.1] dark:bg-zinc-900">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold">1. Paste URL &amp; 2. Select viewports</h2>
-            <button
-              type="button"
-              onClick={loadDemoExample}
-              className="rounded-full border border-black/[.1] px-3 py-1 text-xs font-medium text-zinc-600 transition hover:bg-black/[.04] dark:border-white/[.15] dark:text-zinc-300 dark:hover:bg-white/[.06]"
-            >
-              Load demo example
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={loadDemoExample}
+                className="rounded-full border border-black/[.1] px-3 py-1 text-xs font-medium text-zinc-600 transition hover:bg-black/[.04] dark:border-white/[.15] dark:text-zinc-300 dark:hover:bg-white/[.06]"
+              >
+                Load demo example
+              </button>
+              <button
+                type="button"
+                onClick={loadLoginDemo}
+                disabled={loadingLoginDemo}
+                title="Logs into the bundled /demo/login page for you and fills in the storage state below"
+                className="rounded-full border border-black/[.1] px-3 py-1 text-xs font-medium text-zinc-600 transition hover:bg-black/[.04] disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/[.15] dark:text-zinc-300 dark:hover:bg-white/[.06]"
+              >
+                {loadingLoginDemo ? "Logging in…" : "🔑 Try a login-protected demo"}
+              </button>
+            </div>
           </div>
 
           <div className="flex flex-col gap-4">
@@ -477,6 +543,30 @@ export default function Home() {
                 placeholder={"/\n/about\n/dashboard"}
                 rows={3}
                 className="rounded-lg border border-black/[.1] bg-transparent px-3 py-2 font-mono text-sm outline-none focus:border-sky-500 dark:border-white/[.15]"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="font-medium">🔒 Storage state (optional) - for pages behind login</span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                Log in once in a real browser, export the session as JSON (e.g. via Playwright&apos;s{" "}
+                <code className="rounded bg-black/[.06] px-1 py-0.5 dark:bg-white/[.08]">
+                  context.storageState()
+                </code>
+                , or run{" "}
+                <code className="rounded bg-black/[.06] px-1 py-0.5 dark:bg-white/[.08]">
+                  npx playwright open --save-storage=state.json &lt;login-url&gt;
+                </code>{" "}
+                and log in), then paste that file&apos;s contents here. Every page above is then scanned already
+                signed in - no password is ever sent to this app.
+              </span>
+              <textarea
+                value={storageStateInput}
+                onChange={(e) => setStorageStateInput(e.target.value)}
+                placeholder='{"cookies": [...], "origins": [...]}'
+                rows={3}
+                spellCheck={false}
+                className="rounded-lg border border-black/[.1] bg-transparent px-3 py-2 font-mono text-xs outline-none focus:border-sky-500 dark:border-white/[.15]"
               />
             </label>
 

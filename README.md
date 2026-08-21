@@ -76,14 +76,49 @@ real, possibly-unintentional layout shift nowhere near one). See
 - `/demo/broken-meta` — `missing-viewport-meta`, the one check that can't be
   scoped to a breakpoint (a `<meta>` tag's content is static HTML).
 - `/demo/breakpoint-demo` — feeds Breakpoint Discovery above.
+- `/demo/login` / `/demo/protected` — a login wall (hardcoded
+  `demo` / `demo1234`, session cookie is real AES-256-GCM ciphertext, not a
+  plain flag) for exercising the storage-state feature below without a real
+  website's credentials.
+
+## Scanning pages behind a login (storageState)
+
+`/api/scan` and `/api/discover-breakpoints` both accept an optional
+`storageState` field — a [Playwright storage
+state](https://playwright.dev/docs/auth) object (`{ cookies, origins }`)
+captured from an already-authenticated browser session. When present, every
+page/viewport scanned reuses that session instead of an anonymous one, so
+pages behind a login wall get scanned for real instead of redirecting to a
+login page. It works with any cookie-based session, encrypted/opaque tokens
+included — Playwright replays the cookie byte-for-byte without needing to
+understand what's inside it.
+
+**Try it against the bundled demo (no external site needed):** in the app,
+click **🔑 Try a login-protected demo** — it logs into `/demo/login` with a
+real headless browser server-side and fills the storage-state field for you.
+
+**Export one from a real site you're authorized to scan:**
+
+```bash
+npx playwright open --save-storage=state.json https://your-site/login
+```
+
+Log in manually in the browser window that opens, then **close the window**
+(not the terminal) — Playwright writes `state.json` at that point. Paste its
+contents into the app's "Storage state" field alongside the base URL/pages to
+scan.
+
+`state.json` (and similarly-named exports) are gitignored: the file is a live
+authenticated session, equivalent to a password — never commit or share one,
+and prefer a dedicated test account over a real user's login.
 
 ## API reference
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /api/scan` | `{ baseUrl+pages or urls, viewports }` → issues + screenshot + fix suggestions per page/viewport |
+| `POST /api/scan` | `{ baseUrl+pages or urls, viewports, storageState? }` → issues + screenshot + fix suggestions per page/viewport |
 | `POST /api/preview-fix` | Injects a `fixCode` snippet into a fresh load and reports `resolved`/`improved`/`unresolved`/`worse` |
-| `POST /api/discover-breakpoints` | `{ url, minWidth?, maxWidth? }` → real layout-change widths, classified expected/unexpected |
+| `POST /api/discover-breakpoints` | `{ url, minWidth?, maxWidth?, storageState? }` → real layout-change widths, classified expected/unexpected |
 
 ## Testing
 

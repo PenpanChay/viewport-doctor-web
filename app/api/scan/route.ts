@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { scanAllViewports } from "@/lib/scanViewport";
+import { resolveStorageState } from "@/lib/resolveStorageState";
 
 // Playwright needs a real Node.js process (it spawns a browser binary), so
 // this route can't run on the Edge runtime.
@@ -17,6 +18,11 @@ type ScanRequestBody = {
   viewports?: ViewportInput[];
   timeoutMs?: number;
   settleMs?: number;
+  // Playwright storage state (cookies + localStorage) exported from an
+  // already-authenticated session - lets a scan reach pages behind a login
+  // wall without this route ever handling a username/password itself. See
+  // resolveStorageState() below for the accepted shapes.
+  storageState?: unknown;
 };
 
 function resolveUrls(body: ScanRequestBody): string[] {
@@ -74,12 +80,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const storageState = resolveStorageState(body.storageState);
+  if (storageState.error) {
+    return NextResponse.json({ error: storageState.error }, { status: 400 });
+  }
+
   try {
     const results = await scanAllViewports({
       urls,
       viewports,
       timeoutMs: body.timeoutMs,
       settleMs: body.settleMs,
+      storageState: storageState.value,
     });
 
     return NextResponse.json(results);

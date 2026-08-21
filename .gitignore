@@ -34,6 +34,14 @@ yarn-error.log*
 .env*
 !.env.example
 
+# Playwright storageState exports (--save-storage=...) - each one is a live
+# authenticated session (cookies + localStorage) for whatever site it was
+# captured from, equivalent to a password. Never commit one.
+state.json
+storageState.json
+storage-state.json
+*.storagestate.json
+
 # vercel
 .vercel
 

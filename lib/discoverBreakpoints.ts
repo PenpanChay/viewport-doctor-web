@@ -1,6 +1,6 @@
 import type { Browser } from 'playwright';
 import { BREAKPOINT_BANDS, STANDARD_BREAKPOINTS } from './viewportPresets';
-import type { BreakpointTransition, DiscoverBreakpointsResult, NearestStandardBreakpoint } from './types';
+import type { BreakpointTransition, DiscoverBreakpointsResult, NearestStandardBreakpoint, StorageState } from './types';
 
 // How close (in px) a detected transition has to be to one of
 // STANDARD_BREAKPOINTS to count as "expected" rather than "unexpected".
@@ -159,6 +159,7 @@ export interface DiscoverBreakpointsOptions {
   timeoutMs?: number;
   settleMs?: number;
   maxCandidates?: number;
+  storageState?: StorageState;
 }
 
 /**
@@ -189,7 +190,7 @@ export async function discoverBreakpoints(
   const settleMs = options.settleMs ?? 60; // short - this loop can run 80+ times, not once
   const maxCandidates = options.maxCandidates ?? 20;
 
-  const context = await browser.newContext({ viewport: { width: minWidth, height } });
+  const context = await browser.newContext({ viewport: { width: minWidth, height }, storageState: options.storageState });
   const page = await context.newPage();
 
   const base = { url, minWidth, maxWidth, bands: BREAKPOINT_BANDS, transitions: [] as BreakpointTransition[] };

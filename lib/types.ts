@@ -8,6 +8,14 @@
  * that touches them.
  */
 
+import type { Browser } from 'playwright';
+
+// Derived from Browser['newContext'] rather than hand-declared, so this
+// stays byte-for-byte compatible with whatever shape the installed
+// Playwright version actually accepts (cookies[] + origins[], or a file
+// path string) without duplicating that shape here.
+export type StorageState = NonNullable<Parameters<Browser['newContext']>[0]>['storageState'];
+
 export interface Rect {
   x: number;
   y: number;
