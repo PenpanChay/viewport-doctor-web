@@ -4,12 +4,10 @@ const STORAGE_STATE_ERROR =
   '"storageState" must be a Playwright storage-state JSON object (with "cookies" and "origins" arrays), or a JSON string of one.';
 
 /**
- * Validates an API request's optional `storageState` field, shared by
- * /api/scan and /api/discover-breakpoints so a logged-in session can be
- * handed to either one the same way. Accepts either an already-parsed
- * object (the normal case, since the whole request body is JSON) or a raw
- * JSON string (in case a caller pastes the exported file's contents in
- * without parsing it first).
+ * Validates /api/scan's optional `storageState` field. Accepts either an
+ * already-parsed object (the normal case, since the whole request body is
+ * JSON) or a raw JSON string (in case a caller pastes the exported file's
+ * contents in without parsing it first).
  *
  * Deliberately only checks for the two arrays Playwright's own
  * `context.storageState()` export always has - not every cookie field - so

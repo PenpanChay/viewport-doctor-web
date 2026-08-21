@@ -1,10 +1,10 @@
 /**
  * A deliberately trivial login gate (hardcoded credentials, no real user
  * store - see lib/demoAuth.ts) whose only job is giving the Playwright
- * storageState auth feature (the "storageState" field on /api/scan and
- * /api/discover-breakpoints) something real to test against. /demo/protected
- * redirects here whenever the session cookie this page's form sets isn't
- * present, exactly like a real login wall would.
+ * storageState auth feature (the "storageState" field on /api/scan)
+ * something real to test against. /demo/protected redirects here whenever
+ * the session cookie this page's form sets isn't present, exactly like a
+ * real login wall would.
  */
 import { DEMO_PASSWORD, DEMO_USERNAME } from '@/lib/demoAuth';
 

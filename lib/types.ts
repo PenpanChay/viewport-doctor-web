@@ -1,11 +1,10 @@
 /**
  * Shared shapes used across the detection engine (checks.ts), the scan
  * orchestrator (scanViewport.ts), the fix-suggestion generator
- * (suggestFixes.ts), the fix-preview verifier (previewFix.ts), and the
- * breakpoint-discovery engine (discoverBreakpoints.ts) - kept in one place
- * so the API routes and the frontend (app/page.tsx) share a single source
- * of truth instead of re-declaring the same object shapes in every file
- * that touches them.
+ * (suggestFixes.ts), and the fix-preview verifier (previewFix.ts) - kept in
+ * one place so the API routes and the frontend (app/page.tsx) share a
+ * single source of truth instead of re-declaring the same object shapes in
+ * every file that touches them.
  */
 
 import type { Browser } from 'playwright';
@@ -177,39 +176,6 @@ export interface EvaluatePreviewResult {
   afterSeverity: number | null;
   before: ComparableIssue[];
   after: ComparableIssue[];
-}
-
-export interface BreakpointBand {
-  label: string;
-  min: number;
-  max: number;
-}
-
-export interface StandardBreakpoint {
-  width: number;
-  band: string;
-}
-
-export interface NearestStandardBreakpoint extends StandardBreakpoint {
-  dist: number;
-}
-
-export interface BreakpointTransition {
-  selector: string;
-  width: number;
-  below: number;
-  aboveOrEqual: number;
-  expected: boolean;
-  nearestStandardBreakpoint: NearestStandardBreakpoint | null;
-}
-
-export interface DiscoverBreakpointsResult {
-  url: string;
-  minWidth: number;
-  maxWidth: number;
-  bands: BreakpointBand[];
-  transitions: BreakpointTransition[];
-  navigationError?: string;
 }
 
 export interface ViewportPreset {

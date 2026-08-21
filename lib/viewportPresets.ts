@@ -1,4 +1,4 @@
-import type { BreakpointBand, StandardBreakpoint, ViewportPreset } from './types';
+import type { ViewportPreset } from './types';
 
 /**
  * The 8 named viewport presets this tool ships with, matching the
@@ -32,29 +32,3 @@ export const DEFAULT_ENABLED_PRESET_IDS: Set<string> = new Set([
   'laptop',
   'desktop',
 ]);
-
-// The width bands "Breakpoint Discovery" (lib/discoverBreakpoints.ts)
-// classifies a real, measured layout-change width against - the common,
-// intentional breakpoints most responsive designs are actually built
-// around (close cousins of Tailwind's own default `sm/md/lg/xl` scale,
-// which is itself a close cousin of most real design systems' scales).
-// Only used to label a detected transition as "expected" (close to one of
-// these) vs. "unexpected" (a real behavior change nowhere near any of
-// them, which is exactly the kind of surprise a plain Mobile/Tablet/Desktop
-// screenshot comparison can't tell you about).
-export const STANDARD_BREAKPOINTS: StandardBreakpoint[] = [
-  { width: 640, band: 'Mobile → Tablet Small' },
-  { width: 768, band: 'Tablet Small → Tablet' },
-  { width: 1024, band: 'Tablet → Desktop' },
-  { width: 1280, band: 'Desktop → Large Desktop' },
-];
-
-// The named bands themselves, for rendering the "Responsive Behavior"
-// timeline (320-639 Mobile, 640-767 Tablet Small, ...).
-export const BREAKPOINT_BANDS: BreakpointBand[] = [
-  { label: 'Mobile', min: 320, max: 639 },
-  { label: 'Tablet Small', min: 640, max: 767 },
-  { label: 'Tablet', min: 768, max: 1023 },
-  { label: 'Desktop', min: 1024, max: 1279 },
-  { label: 'Large Desktop', min: 1280, max: Infinity },
-];

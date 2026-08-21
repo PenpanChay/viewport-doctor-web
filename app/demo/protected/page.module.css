@@ -1,0 +1,120 @@
+/* /demo/protected page styles. Every value below is the literal px/rem/hex
+   Tailwind was generating for the utility classes this replaces, so every
+   computed style lib/checks.ts measures (widths, colors, gaps, font sizes)
+   is unchanged - only breakpoint on this page is `sm` = 640px, where the
+   account label's clipped-text bug clears. */
+
+.main {
+  margin-inline: auto; /* mx-auto */
+  width: 100%; /* w-full */
+  max-width: 48rem; /* max-w-3xl */
+  padding-inline: 1.5rem; /* px-6 */
+  padding-block: 4rem; /* py-16 */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; /* font-sans */
+  color: #18181b; /* text-zinc-900 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .main {
+    color: #fafafa; /* dark:text-zinc-50 */
+  }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px; /* rounded-full */
+  background-color: #ecfdf5; /* bg-emerald-50 */
+  padding-inline: 0.75rem; /* px-3 */
+  padding-block: 0.25rem; /* py-1 */
+  font-size: 0.75rem; /* text-xs */
+  font-weight: 500; /* font-medium */
+  color: #047857; /* text-emerald-700 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .badge {
+    background-color: #022c2299; /* dark:bg-emerald-950/60 */
+    color: #6ee7b7; /* dark:text-emerald-300 */
+  }
+}
+
+.heading {
+  margin-top: 0.75rem; /* mt-3 */
+  font-size: 1.5rem; /* text-2xl */
+  font-weight: 600; /* font-semibold */
+  letter-spacing: -0.025em; /* tracking-tight */
+}
+
+.intro {
+  margin-top: 0.75rem; /* mt-3 */
+  max-width: 65ch; /* max-w-prose */
+  font-size: 0.875rem; /* text-sm */
+  color: #52525c; /* text-zinc-600 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .intro {
+    color: #9f9fa9; /* dark:text-zinc-400 */
+  }
+}
+
+.inlineCode {
+  border-radius: 0.25rem; /* rounded */
+  background-color: #0000000f; /* bg-black/[.06] */
+  padding-inline: 0.25rem; /* px-1 */
+  padding-block: 0.125rem; /* py-0.5 */
+  color: #3f3f46; /* text-zinc-700 */
+}
+
+@media (prefers-color-scheme: dark) {
+  .inlineCode {
+    background-color: #ffffff14; /* dark:bg-white/[.08] */
+    color: #d4d4d8; /* dark:text-zinc-300 */
+  }
+}
+
+/* The bug BugCard #1 documents: fixed at 96px wide on a phone (too narrow
+   for its own text, which clips with no wrap/ellipsis), widening to 224px
+   from `sm` up - same shape as /demo's clippedLabel bug. */
+.accountLabel {
+  width: 6rem; /* w-24 */
+  overflow: hidden;
+  white-space: nowrap;
+  border-radius: 0.5rem; /* rounded-lg */
+  border: 1px solid #d4d4d8; /* border-zinc-300 */
+  padding: 0.5rem; /* p-2 */
+  font-size: 0.875rem; /* text-sm */
+}
+
+@media (prefers-color-scheme: dark) {
+  .accountLabel {
+    border-color: #3f3f46; /* dark:border-zinc-700 */
+  }
+}
+
+@media (min-width: 640px) {
+  .accountLabel {
+    width: 14rem; /* sm:w-56 */
+  }
+}
+
+.logoutForm {
+  margin-top: 2.5rem; /* mt-10 */
+}
+
+.logoutButton {
+  font-size: 0.75rem; /* text-xs */
+  color: #71717b; /* text-zinc-500 */
+  text-decoration-line: underline; /* underline */
+}
+
+.logoutButton:hover {
+  text-decoration-line: none; /* hover:no-underline */
+}
+
+@media (prefers-color-scheme: dark) {
+  .logoutButton {
+    color: #9f9fa9; /* dark:text-zinc-400 */
+  }
+}

@@ -11,10 +11,9 @@
  * (1440px) and Large Desktop (1920px), and stays broken at every smaller
  * preset (Mobile S/Mobile/Mobile Large/Tablet/Tablet Landscape/Laptop, up
  * to 1280px) - via a real `@media (min-width: 1440px)` block per rule in
- * page.module.css, the same breakpoint /demo/breakpoint-demo uses (there
- * via a Tailwind arbitrary variant instead). This mirrors the real "looks
- * fine on a laptop, breaks on smaller screens" story every bug on the
- * main /demo page already tells, just for the checks that live here.
+ * page.module.css. This mirrors the real "looks fine on a laptop, breaks
+ * on smaller screens" story every bug on the main /demo page already
+ * tells, just for the checks that live here.
  *
  * missing-viewport-meta is the one exception - see /demo/broken-meta
  * instead: a `<meta name="viewport">` tag's content is static HTML, not a

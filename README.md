@@ -59,15 +59,6 @@ an issue count ("Responsive Health"). Clicking an issue expands an **Issue
 Detail** card: Viewport, Element, Expected, Actual, Overflow, a highlighted
 screenshot, and a suggested fix (prose + ready-to-paste CSS).
 
-## Breakpoint Discovery (bonus)
-
-Beyond the 8 fixed presets, `POST /api/discover-breakpoints` resizes the page
-in small steps to find the *real* widths where its layout actually changes —
-not just where you told it to check — and classifies each as **expected**
-(within 6px of a standard breakpoint: 640/768/1024/1280) or **unexpected** (a
-real, possibly-unintentional layout shift nowhere near one). See
-`/demo/breakpoint-demo` for a page with one of each.
-
 ## Demo pages
 
 - `/demo` — 3 checks, a gentle first scan (fine on Tablet+, breaks below 640px).
@@ -75,7 +66,6 @@ real, possibly-unintentional layout shift nowhere near one). See
   Desktop up.
 - `/demo/broken-meta` — `missing-viewport-meta`, the one check that can't be
   scoped to a breakpoint (a `<meta>` tag's content is static HTML).
-- `/demo/breakpoint-demo` — feeds Breakpoint Discovery above.
 - `/demo/login` / `/demo/protected` — a login wall (hardcoded
   `demo` / `demo1234`, session cookie is real AES-256-GCM ciphertext, not a
   plain flag) for exercising the storage-state feature below without a real
@@ -83,8 +73,7 @@ real, possibly-unintentional layout shift nowhere near one). See
 
 ## Scanning pages behind a login (storageState)
 
-`/api/scan` and `/api/discover-breakpoints` both accept an optional
-`storageState` field — a [Playwright storage
+`/api/scan` accepts an optional `storageState` field — a [Playwright storage
 state](https://playwright.dev/docs/auth) object (`{ cookies, origins }`)
 captured from an already-authenticated browser session. When present, every
 page/viewport scanned reuses that session instead of an anonymous one, so
@@ -118,7 +107,6 @@ and prefer a dedicated test account over a real user's login.
 |---|---|
 | `POST /api/scan` | `{ baseUrl+pages or urls, viewports, storageState? }` → issues + screenshot + fix suggestions per page/viewport |
 | `POST /api/preview-fix` | Injects a `fixCode` snippet into a fresh load and reports `resolved`/`improved`/`unresolved`/`worse` |
-| `POST /api/discover-breakpoints` | `{ url, minWidth?, maxWidth?, storageState? }` → real layout-change widths, classified expected/unexpected |
 
 ## Testing
 
@@ -126,7 +114,7 @@ and prefer a dedicated test account over a real user's login.
 npm test
 ```
 
-Runs `next build`, then 83 tests across 7 files — all against a real headless
+Runs `next build`, then 72 tests across 5 files — all against a real headless
 browser and a real `next start` server (no mocked DOM/Playwright/routes).
 
 ## Tech stack

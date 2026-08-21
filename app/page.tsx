@@ -62,27 +62,6 @@ type ScanPage = {
 
 type ScanResponse = { pages: ScanPage[] } | { error: string };
 
-type BreakpointTransition = {
-  selector: string;
-  width: number;
-  below: number;
-  aboveOrEqual: number;
-  expected: boolean;
-  nearestStandardBreakpoint: { width: number; band: string; dist: number } | null;
-};
-
-type BreakpointBand = { label: string; min: number; max: number | null };
-
-type BreakpointResult = {
-  url: string;
-  minWidth: number;
-  maxWidth: number;
-  bands: BreakpointBand[];
-  transitions: BreakpointTransition[];
-};
-
-type BreakpointResponse = BreakpointResult | { error: string };
-
 const DEFAULT_VIEWPORTS: ViewportEntry[] = VIEWPORT_PRESETS.map((p) => ({
   id: p.id,
   label: p.label,
@@ -343,14 +322,15 @@ export default function Home() {
   const [result, setResult] = useState<ScanPage[] | null>(null);
   const [activeViewport, setActiveViewport] = useState<Record<string, string>>({});
   const [expandedIssues, setExpandedIssues] = useState<Record<string, boolean>>({});
-  const [breakpointState, setBreakpointState] = useState<
-    Record<string, { loading: boolean; error: string | null; result: BreakpointResult | null }>
-  >({});
   const customFormId = useId();
 
   function loadDemoExample() {
     setBaseUrl(window.location.origin);
-    setPagesInput("/demo\n/demo/edge-cases\n/demo/breakpoint-demo");
+    setPagesInput("/demo\n/demo/edge-cases");
+    // Clears any storage state left over from "Try a login-protected demo" -
+    // these pages don't need it, and leaving a stale session in the field
+    // would silently carry over into whatever the user scans next.
+    setStorageStateInput("");
     setResult(null);
     setError(null);
   }
@@ -406,7 +386,6 @@ export default function Home() {
     setError(null);
     setResult(null);
     setExpandedIssues({});
-    setBreakpointState({});
 
     try {
       const pages = parseLines(pagesInput);
@@ -455,32 +434,6 @@ export default function Home() {
     }
   }
 
-  async function runBreakpointDiscovery(pageUrl: string) {
-    setBreakpointState((prev) => ({ ...prev, [pageUrl]: { loading: true, error: null, result: null } }));
-    try {
-      const storageState = parseStorageStateInput(storageStateInput);
-      if (storageState.error) {
-        throw new Error(storageState.error);
-      }
-
-      const res = await fetch("/api/discover-breakpoints", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: pageUrl,
-          ...(storageState.value !== undefined ? { storageState: storageState.value } : {}),
-        }),
-      });
-      const data: BreakpointResponse = await res.json();
-      if (!res.ok || "error" in data) {
-        throw new Error("error" in data ? data.error : `Request failed with status ${res.status}`);
-      }
-      setBreakpointState((prev) => ({ ...prev, [pageUrl]: { loading: false, error: null, result: data } }));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      setBreakpointState((prev) => ({ ...prev, [pageUrl]: { loading: false, error: message, result: null } }));
-    }
-  }
 
   const viewportsByCategory = new Map<string, ViewportEntry[]>();
   for (const v of viewports) {
@@ -681,7 +634,6 @@ export default function Home() {
               {result.map((page) => {
                 const active = activeViewport[page.url] ?? page.viewports[0]?.label;
                 const activeResult = page.viewports.find((v) => v.label === active) ?? page.viewports[0];
-                const bp = breakpointState[page.url];
                 return (
                   <div
                     key={page.url}
@@ -883,91 +835,6 @@ export default function Home() {
                         )}
                       </div>
                     )}
-
-                    {/* Breakpoint Discovery: an opt-in deeper scan (it sweeps
-                        many more widths than the fixed presets above, so it's
-                        slower) that finds the ACTUAL width(s) this page's
-                        layout changes at, and flags any that land nowhere
-                        near a standard breakpoint - the "742px surprise" a
-                        handful of preset screenshots can't catch, since none
-                        of them happen to straddle it. */}
-                    <div className="mt-4 border-t border-black/[.06] pt-4 dark:border-white/[.08]">
-                      <div className="mb-2 flex items-center justify-between">
-                        <h3 className="text-sm font-semibold">Breakpoint Discovery</h3>
-                        <button
-                          type="button"
-                          onClick={() => runBreakpointDiscovery(page.url)}
-                          disabled={bp?.loading}
-                          className="rounded-full border border-black/[.1] px-3 py-1 text-xs font-medium text-zinc-600 transition hover:bg-black/[.04] disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/[.15] dark:text-zinc-300 dark:hover:bg-white/[.06]"
-                        >
-                          {bp?.loading ? "Scanning widths…" : "🔍 Discover breakpoints"}
-                        </button>
-                      </div>
-                      <p className="mb-2 text-xs text-zinc-400 dark:text-zinc-500">
-                        Sweeps this page across every width from 320px to 1920px (not just the presets above) to find
-                        where its layout actually changes.
-                      </p>
-
-                      {bp?.error && (
-                        <p className="text-xs text-rose-600 dark:text-rose-400">{bp.error}</p>
-                      )}
-
-                      {bp?.result && (
-                        <div className="flex flex-col gap-3">
-                          {/* Responsive Behavior timeline - the standard bands
-                              this tool classifies transitions against. */}
-                          <div className="flex flex-wrap gap-1 text-xs">
-                            {bp.result.bands.map((band) => (
-                              <span
-                                key={band.label}
-                                className="rounded-md bg-zinc-100 px-2 py-1 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
-                              >
-                                {band.min}
-                                {band.max ? `–${band.max}px` : "px+"} <span className="font-medium">{band.label}</span>
-                              </span>
-                            ))}
-                          </div>
-
-                          {bp.result.transitions.length === 0 ? (
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                              No repeated-item grid/list found with a column count that changes across this width
-                              range - nothing to report.
-                            </p>
-                          ) : (
-                            <ul className="flex flex-col gap-2">
-                              {bp.result.transitions.map((t, i) => (
-                                <li
-                                  key={i}
-                                  className={`rounded-lg border px-3 py-2 text-xs ${
-                                    t.expected
-                                      ? "border-black/[.06] dark:border-white/[.08]"
-                                      : "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40"
-                                  }`}
-                                >
-                                  <p className="font-medium">
-                                    {t.expected ? "✓" : "⚠"} {t.expected ? "Expected" : "Unexpected"} breakpoint at{" "}
-                                    {t.width}px
-                                  </p>
-                                  <p className="mt-0.5 text-zinc-500 dark:text-zinc-400">
-                                    Below {t.width}px: {t.below}-column layout → At/above {t.width}px:{" "}
-                                    {t.aboveOrEqual}-column layout
-                                  </p>
-                                  <p className="mt-0.5 font-mono text-[11px] text-zinc-400 dark:text-zinc-500">
-                                    {t.selector}
-                                  </p>
-                                  {!t.expected && t.nearestStandardBreakpoint && (
-                                    <p className="mt-0.5 text-amber-700 dark:text-amber-400">
-                                      Nearest standard breakpoint is {t.nearestStandardBreakpoint.width}px (
-                                      {t.nearestStandardBreakpoint.band}) - {t.nearestStandardBreakpoint.dist}px away.
-                                    </p>
-                                  )}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                        </div>
-                      )}
-                    </div>
                   </div>
                 );
               })}
@@ -978,9 +845,7 @@ export default function Home() {
         <footer className="mt-12 rounded-xl border border-dashed border-black/[.1] p-4 text-sm text-zinc-500 dark:border-white/[.15]">
           No app to point it at yet? Click <strong>Load demo example</strong>, then <strong>Run check</strong> - the
           bundled <code className="rounded bg-black/[.06] px-1 py-0.5 dark:bg-white/[.08]">/demo</code> page is
-          already full of real bugs to try it on, and{" "}
-          <code className="rounded bg-black/[.06] px-1 py-0.5 dark:bg-white/[.08]">/demo/breakpoint-demo</code> has a
-          real &quot;unexpected breakpoint&quot; for Breakpoint Discovery to find.
+          already full of real bugs to try it on.
         </footer>
       </div>
     </div>
