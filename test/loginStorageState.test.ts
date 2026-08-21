@@ -4,7 +4,13 @@ import { chromium, type Browser } from 'playwright';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { captureLoginStorageState } from '../lib/loginStorageState';
 import { startNextServer, type NextServerHandle } from '../lib/nextServer';
-import { DEMO_PASSWORD, DEMO_SESSION_COOKIE, DEMO_USERNAME } from '../lib/demoAuth';
+import {
+  DEMO_PASSWORD,
+  DEMO_SESSION_COOKIE,
+  DEMO_SESSION_STORAGE_KEY,
+  DEMO_SESSION_STORAGE_VALUE,
+  DEMO_USERNAME,
+} from '../lib/demoAuth';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.join(__dirname, '..');
@@ -50,6 +56,16 @@ describe('captureLoginStorageState (real browser, real Next.js server, no mockin
     // Real, non-empty ciphertext - not asserting an exact value since the
     // token is AES-256-GCM with a random IV per login (see lib/demoAuth.ts).
     expect(cookie!.value.length).toBeGreaterThan(20);
+
+    // /demo/login also seeds a sessionStorage marker on load (see
+    // lib/demoAuth.ts) specifically so this capture - the same one
+    // /api/demo-login-storage-state relies on - has something real to
+    // return instead of always coming back empty for the bundled demo.
+    expect(result.sessionStorageState).toBeDefined();
+    const origin = result.sessionStorageState!.find((o) => o.origin === baseUrl);
+    expect(origin?.sessionStorage.find((e) => e.name === DEMO_SESSION_STORAGE_KEY)?.value).toBe(
+      DEMO_SESSION_STORAGE_VALUE
+    );
   }, 20000);
 
   it('reports an error instead of throwing when the password is wrong and successUrlPattern is given', async () => {

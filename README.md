@@ -105,9 +105,11 @@ below "Storage state". Leave it empty for sites that don't need it.
 
 **Option A — try it against the bundled demo (no external site needed):** in
 the app, click **🔑 Try a login-protected demo** — it logs into `/demo/login`
-with a real headless browser server-side and fills the storage-state field
-for you. (The demo keeps its whole session in a cookie, so it never needs
-`sessionStorageState`.)
+with a real headless browser server-side and fills in both fields for you.
+(`/demo/login` also seeds a small `sessionStorage` marker on load purely so
+this button demonstrates the `sessionStorageState` shape too —
+`/demo/protected`'s own redirect still only checks the session cookie, so
+nothing in the bundled demo is actually gated on it.)
 
 **Option B — `POST /api/login-storage-state` (automated, any site):** drives
 a real headless browser to a login form, fills it in, submits, and returns

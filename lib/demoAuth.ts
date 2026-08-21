@@ -18,6 +18,18 @@ export const DEMO_SESSION_COOKIE = 'accessToken';
 export const DEMO_USERNAME = 'demo';
 export const DEMO_PASSWORD = 'demo1234';
 
+// A small sessionStorage marker /demo/login seeds on load (see that page)
+// and /api/demo-login-storage-state then captures alongside storageState
+// (see lib/sessionStorageState.ts) - purely so "🔑 Try a login-protected
+// demo" fills in BOTH the storageState and sessionStorageState fields,
+// giving a template of the shape a real SSO-style site's session split
+// across cookies + sessionStorage would need (see the README's "Sites that
+// also need sessionStorage" section). /demo/protected's own redirect above
+// still only checks DEMO_SESSION_COOKIE - this marker doesn't gate
+// anything, so it can't turn into a second, silently-required login step.
+export const DEMO_SESSION_STORAGE_KEY = 'demoSessionMarker';
+export const DEMO_SESSION_STORAGE_VALUE = 'demo-session-active';
+
 // The cookie value itself is AES-256-GCM ciphertext, not a plain flag - so
 // this demo also proves the storageState feature works against a real
 // encrypted-token session (JWT-in-a-cookie, NextAuth, Rails' encrypted

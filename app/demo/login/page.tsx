@@ -6,7 +6,7 @@
  * the session cookie this page's form sets isn't present, exactly like a
  * real login wall would.
  */
-import { DEMO_PASSWORD, DEMO_USERNAME } from '@/lib/demoAuth';
+import { DEMO_PASSWORD, DEMO_SESSION_STORAGE_KEY, DEMO_SESSION_STORAGE_VALUE, DEMO_USERNAME } from '@/lib/demoAuth';
 
 export default async function DemoLoginPage({
   searchParams,
@@ -17,6 +17,24 @@ export default async function DemoLoginPage({
 
   return (
     <main className="mx-auto w-full max-w-sm px-6 py-16 font-sans text-zinc-900 dark:text-zinc-50">
+      {/*
+        Seeds a sessionStorage marker the instant this page loads - before
+        the form is even submitted - the same pattern a real SSO-style login
+        page uses (see lib/sessionStorageState.ts and the README's "Sites
+        that also need sessionStorage" section). sessionStorage survives the
+        same-tab redirect /api/demo-login issues on success, so it's still
+        there once the browser lands on /demo/protected, which is what
+        /api/demo-login-storage-state then captures alongside storageState.
+        A plain <script> with static, JSON-escaped content - not something
+        derived from user input - so this is safe from injection.
+      */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `window.sessionStorage.setItem(${JSON.stringify(DEMO_SESSION_STORAGE_KEY)}, ${JSON.stringify(
+            DEMO_SESSION_STORAGE_VALUE
+          )});`,
+        }}
+      />
       <h1 className="text-xl font-semibold">Demo login</h1>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
         Hardcoded credentials, just so this app has a real login wall to demonstrate scanning behind - use{' '}

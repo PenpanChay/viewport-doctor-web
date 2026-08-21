@@ -343,8 +343,9 @@ export default function Home() {
 
   // Logs into the bundled /demo/login page with a real headless browser
   // server-side (see /api/demo-login-storage-state) and drops the resulting
-  // storageState straight into the field below, so trying the auth feature
-  // never requires a real website's credentials - just this button.
+  // storageState + sessionStorageState straight into the two fields below,
+  // so trying the auth feature never requires a real website's credentials
+  // - just this button.
   async function loadLoginDemo() {
     setBaseUrl(window.location.origin);
     setPagesInput("/demo/protected");
@@ -357,11 +358,18 @@ export default function Home() {
       if (!res.ok || (data && typeof data === "object" && "error" in data)) {
         throw new Error(data?.error ?? `Request failed with status ${res.status}`);
       }
-      setStorageStateInput(JSON.stringify(data, null, 2));
-      // The bundled demo keeps its whole session in a cookie (see
-      // lib/demoAuth.ts) - nothing in sessionStorage, so any leftover value
-      // here from a previous real-site attempt would just be dead weight.
-      setSessionStorageStateInput("");
+      setStorageStateInput(JSON.stringify(data.storageState, null, 2));
+      // /demo/login seeds a small sessionStorage marker on load (see
+      // lib/demoAuth.ts) purely so this button also demonstrates the
+      // sessionStorageState shape - /demo/protected's own redirect still
+      // only checks the session cookie, so an empty array here (nothing
+      // captured) is unexpected rather than normal; fall back to "" the
+      // same way an empty response would for storageState.
+      setSessionStorageStateInput(
+        Array.isArray(data.sessionStorageState) && data.sessionStorageState.length > 0
+          ? JSON.stringify(data.sessionStorageState, null, 2)
+          : ""
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
